@@ -1,7 +1,10 @@
 import { Button } from "@/components/ui/button";
-import { Link } from "react-router-dom";
+import { useDelayedNavigate } from "@/hooks/useDelayedNavigate";
+import { Loader2 } from "lucide-react";
 
 const HeroSection = () => {
+  const { delayedNavigate, isNavigating } = useDelayedNavigate();
+
   return (
     <section className="relative pt-32 pb-24 gradient-hero">
       <div className="container">
@@ -15,8 +18,12 @@ const HeroSection = () => {
               ContentFlow.ai automatiza a criação de legendas, calendários editoriais e respostas de comentários para cada cliente, preservando a voz de cada marca.
             </p>
             <div className="flex gap-4">
-              <Button asChild size="lg">
-                <Link to="/auth/register">Criar conta grátis</Link>
+              <Button
+                size="lg"
+                disabled={isNavigating}
+                onClick={() => delayedNavigate("/auth/register")}
+              >
+                {isNavigating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Criar conta grátis"}
               </Button>
               <Button variant="ghost" size="lg" asChild>
                 <a href="#como-funciona">Ver como funciona</a>

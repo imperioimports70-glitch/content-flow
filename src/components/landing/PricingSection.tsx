@@ -1,6 +1,6 @@
 import { Button } from "@/components/ui/button";
-import { Check, Minus } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Check, Minus, Loader2 } from "lucide-react";
+import { useDelayedNavigate } from "@/hooks/useDelayedNavigate";
 
 interface Plan {
   name: string;
@@ -13,7 +13,7 @@ interface Plan {
 const plans: Plan[] = [
   {
     name: "Starter",
-    price: "R$97",
+    price: "R$47",
     desc: "Para freelancers começando",
     features: [
       { label: "3 clientes", included: true },
@@ -26,7 +26,7 @@ const plans: Plan[] = [
   },
   {
     name: "Agência",
-    price: "R$247",
+    price: "R$97",
     desc: "Para agências em crescimento",
     highlight: true,
     features: [
@@ -40,7 +40,7 @@ const plans: Plan[] = [
   },
   {
     name: "White Label",
-    price: "R$497",
+    price: "R$197",
     desc: "Para agências enterprise",
     features: [
       { label: "Clientes ilimitados", included: true },
@@ -54,6 +54,8 @@ const plans: Plan[] = [
 ];
 
 const PricingSection = () => {
+  const { delayedNavigate, isNavigating } = useDelayedNavigate();
+
   return (
     <section className="py-24 section-divider">
       <div className="container">
@@ -86,9 +88,9 @@ const PricingSection = () => {
                     {f.included ? (
                       <Check className="w-4 h-4 text-success shrink-0" />
                     ) : (
-                      <Minus className="w-4 h-4 text-text-disabled shrink-0" />
+                      <Minus className="w-4 h-4 text-muted-foreground shrink-0" />
                     )}
-                    <span className={f.included ? "text-foreground" : "text-text-disabled"}>
+                    <span className={f.included ? "text-foreground" : "text-muted-foreground"}>
                       {f.label}
                     </span>
                   </li>
@@ -97,9 +99,10 @@ const PricingSection = () => {
               <Button
                 variant={plan.highlight ? "default" : "ghost"}
                 className="w-full"
-                asChild
+                disabled={isNavigating}
+                onClick={() => delayedNavigate("/auth/register")}
               >
-                <Link to="/auth/register">Começar agora</Link>
+                {isNavigating ? <Loader2 className="w-4 h-4 animate-spin" /> : "Começar agora"}
               </Button>
             </div>
           ))}
