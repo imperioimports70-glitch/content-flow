@@ -3,8 +3,15 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
-import Index from "./pages/Index.tsx";
-import NotFound from "./pages/NotFound.tsx";
+import Index from "./pages/Index";
+import NotFound from "./pages/NotFound";
+import Login from "./pages/auth/Login";
+import Register from "./pages/auth/Register";
+import DashboardLayout from "./layouts/DashboardLayout";
+import Overview from "./pages/dashboard/Overview";
+import ContentGenerator from "./pages/dashboard/ContentGenerator";
+import BrandSettings from "./pages/dashboard/BrandSettings";
+import MasterDashboard from "./pages/dashboard/MasterDashboard";
 
 const queryClient = new QueryClient();
 
@@ -16,7 +23,14 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Index />} />
-          {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+          <Route path="/auth/login" element={<Login />} />
+          <Route path="/auth/register" element={<Register />} />
+          <Route path="/dashboard" element={<DashboardLayout />}>
+            <Route index element={<Overview />} />
+            <Route path="content" element={<ContentGenerator />} />
+            <Route path="settings" element={<BrandSettings />} />
+            <Route path="master" element={<MasterDashboard />} />
+          </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
