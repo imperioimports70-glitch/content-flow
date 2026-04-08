@@ -1,0 +1,19 @@
+{
+    "mcpServers": {
+      "context7": {
+        "command": "node",
+        "args": [
+         "C:\\Users\\orlan\\AppData\\Roaming\\npm\\node_modules\\@upstash\\context7-mcp\\dist\\index.js"
+        ]
+      },
+      "supabase": {
+        "url": "https://mcp.supabase.com/mcp",
+        "args": [
+          "--project-ref=telqezbdxrfkuahvkswm"
+        ],
+        "env": {
+          "SUPABASE_ACCESS_TOKEN": "sbp_a2fec1641a84e5a78ecda2e4898b23011cf898cf"
+        }
+      }
+    }
+   }
