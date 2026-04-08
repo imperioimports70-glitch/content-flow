@@ -1,37 +1,52 @@
-import { Badge } from "@/components/ui/badge";
-
-const metrics = [
-  { label: "Posts Agendados", value: "42", change: "+12%", positive: true },
-  { label: "Comentários Respondidos", value: "128", change: "+8%", positive: true },
-  { label: "Clientes Ativos", value: "8", change: "0%", positive: true },
-  { label: "Horas Economizadas", value: "36h", change: "+24%", positive: true },
-];
-
-const posts = [
-  { client: "Studio Design", network: "Instagram", date: "07/04/2026", status: "Agendado" },
-  { client: "Tech Corp", network: "LinkedIn", date: "08/04/2026", status: "Rascunho" },
-  { client: "Café Aroma", network: "Instagram", date: "08/04/2026", status: "Agendado" },
-  { client: "FitLife", network: "TikTok", date: "09/04/2026", status: "Publicado" },
-  { client: "Studio Design", network: "Twitter", date: "09/04/2026", status: "Rascunho" },
-];
-
-const activity = [
-  { text: "Legenda gerada para Studio Design", time: "Há 5 min" },
-  { text: "3 posts agendados para Café Aroma", time: "Há 20 min" },
-  { text: "Comentário respondido em Tech Corp", time: "Há 1h" },
-  { text: "Relatório semanal gerado", time: "Há 2h" },
-  { text: "Novo cliente adicionado: FitLife", time: "Há 3h" },
-];
-
-const statusVariant = (status: string) => {
-  switch (status) {
-    case "Agendado": return "bg-primary/10 text-primary";
-    case "Publicado": return "bg-success/10 text-success";
-    default: return "bg-muted text-muted-foreground";
-  }
-};
+import { useEffect, useState } from "react";
+import { getSupabaseBrowserClient } from "@/lib/supabase/client";
+import { useAgencia } from "@/providers/AgenciaProvider";
+import { useClienteWorkspace } from "@/providers/ClienteWorkspaceProvider";
 
 const Overview = () => {
+  const supabase = getSupabaseBrowserClient();
+  const { agencia } = useAgencia();
+  const { clienteAtivoId, clienteAtivo } = useClienteWorkspace();
+  const [scheduled, setScheduled] = useState(0);
+  const [comments, setComments] = useState(0);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const run = async () => {
+      if (!agencia?.id) {
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
+      let s = 0;
+      let c = 0;
+      if (clienteAtivoId) {
+        const postsRes = await supabase
+          .from("posts")
+          .select("id", { count: "exact", head: true })
+          .eq("cliente_id", clienteAtivoId)
+          .eq("status", "agendado");
+        s = postsRes.count ?? 0;
+        const comRes = await supabase
+          .from("comentarios")
+          .select("id", { count: "exact", head: true })
+          .eq("cliente_id", clienteAtivoId);
+        c = comRes.count ?? 0;
+      }
+      setScheduled(s);
+      setComments(c);
+      setLoading(false);
+    };
+    void run();
+  }, [agencia?.id, clienteAtivoId, supabase]);
+
+  const metrics = [
+    { label: "Posts agendados (cliente ativo)", value: loading ? "—" : String(scheduled), change: "", positive: true },
+    { label: "Comentários (cliente ativo)", value: loading ? "—" : String(comments), change: "", positive: true },
+    { label: "Cliente ativo", value: clienteAtivo?.nome ?? "—", change: "", positive: true },
+    { label: "Status assinatura", value: agencia?.status_assinatura ?? "—", change: "", positive: true },
+  ];
+
   return (
     <div className="space-y-6">
       <h1 className="text-title-md text-foreground">Visão Geral</h1>
@@ -40,51 +55,18 @@ const Overview = () => {
           <div key={m.label} className="card-surface p-5 rounded-xl">
             <p className="text-2xl font-semibold text-foreground">{m.value}</p>
             <p className="text-xs text-muted-foreground mt-1">{m.label}</p>
-            <p className={`text-xs mt-2 ${m.positive ? "text-success" : "text-destructive"}`}>{m.change}</p>
+            {m.change ? (
+              <p className={`text-xs mt-2 ${m.positive ? "text-success" : "text-destructive"}`}>{m.change}</p>
+            ) : null}
           </div>
         ))}
       </div>
-      <div className="grid lg:grid-cols-[1fr_340px] gap-6">
-        <div className="card-surface rounded-xl overflow-hidden">
-          <div className="px-5 py-4 border-b border-border">
-            <h2 className="text-sm font-medium text-foreground">Próximos Posts</h2>
-          </div>
-          <table className="w-full">
-            <thead>
-              <tr className="text-left text-label border-b border-border">
-                <th className="px-5 py-3">Cliente</th>
-                <th className="px-5 py-3">Rede</th>
-                <th className="px-5 py-3">Data</th>
-                <th className="px-5 py-3">Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {posts.map((p, i) => (
-                <tr key={i} className="border-b border-border last:border-0">
-                  <td className="px-5 py-3 text-sm text-foreground">{p.client}</td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{p.network}</td>
-                  <td className="px-5 py-3 text-sm text-muted-foreground">{p.date}</td>
-                  <td className="px-5 py-3">
-                    <span className={`text-xs px-2 py-1 rounded-md ${statusVariant(p.status)}`}>
-                      {p.status}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="card-surface rounded-xl p-5">
-          <h2 className="text-sm font-medium text-foreground mb-4">Atividade Recente</h2>
-          <div className="space-y-4">
-            {activity.map((a, i) => (
-              <div key={i} className="flex justify-between gap-4">
-                <p className="text-sm text-muted-foreground">{a.text}</p>
-                <span className="text-xs text-text-disabled whitespace-nowrap">{a.time}</span>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="card-surface rounded-xl p-5">
+        <h2 className="text-sm font-medium text-foreground mb-2">Resumo</h2>
+        <p className="text-sm text-muted-foreground">
+          Os números acima refletem o <strong>cliente selecionado no header</strong> e os dados reais do Supabase.
+          Cadastre clientes em &quot;Meus Clientes&quot; e use o gerador para criar posts.
+        </p>
       </div>
     </div>
   );
