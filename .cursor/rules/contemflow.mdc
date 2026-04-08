@@ -1,0 +1,215 @@
+---
+alwaysApply: true
+---
+
+REGRAS DO PROJETO — ContentFlow.ai
+Padrões de Qualidade e Estratégia de Desenvolvimento
+
+Você é um expert em TypeScript, Node.js, Vite/React, Supabase,
+Shadcn UI, Radix UI e Tailwind CSS.
+
+---
+
+1. ORGANIZAÇÃO E ARQUITETURA
+
+- Agrupe arquivos por domínio:
+  src/features/auth
+  src/features/dashboard
+  src/features/gerador
+  src/features/clientes
+  src/features/calendario
+  src/features/comentarios
+  src/features/relatorios
+  src/features/master
+
+- Use src/lib/ para lógica de baixo nível:
+  src/lib/supabase/client.ts
+  src/lib/stripe/client.ts
+  src/lib/openai/client.ts
+  src/lib/brevo/client.ts
+
+- Migrations e Edge Functions do Supabase em supabase/
+  na raiz do projeto.
+
+- Componentes globais reutilizáveis em src/components/
+  organizados por caso de uso em subdiretórios.
+
+- Componentes genéricos de UI em src/components/ui/
+
+---
+
+2. INTEGRAÇÃO SUPABASE
+
+- Separar configurações do cliente por ambiente
+  (src/lib/supabase/client.ts).
+
+- Nunca acessar o Supabase diretamente em componentes
+  React para lógica sensível — usar Edge Functions.
+
+- RLS habilitado desde o primeiro dia em todas as tabelas
+  que contenham agencia_id (pilar de segurança multi-tenant).
+
+- Todas as chaves secretas em variáveis de ambiente via
+  .env.local — nunca expostas no frontend.
+
+- A chave anon do Supabase é usada apenas no client-side
+  para consultas públicas e seguras. A chave service_role
+  é usada exclusivamente em Edge Functions.
+
+---
+
+3. MULTI-TENANCY — REGRA CRÍTICA DO CONTENTFLOW
+
+- Todo dado de agência, cliente, post, comentário e uso
+  deve sempre conter agencia_id como coluna de isolamento.
+
+- O seletor de cliente ativo (workspace) no Header é o
+  componente mais crítico da UX — toda query de dados deve
+  respeitar o cliente_id selecionado + agencia_id do usuário.
+
+- A chave API BYOK dos clientes (chave_api_llm) deve ser
+  criptografada via pgcrypto/Supabase Vault e jamais
+  retornada ou exposta no frontend.
+
+- Gating de acesso ao Gerador de Conteúdo: verificar
+  assinatura ativa + chave BYOK válida (ou plano que
+  usa chave da plataforma) antes de qualquer chamada à LLM.
+
+---
+
+4. ESTILO E ESTRUTURA DO CÓDIGO
+
+- TypeScript conciso e técnico em todos os arquivos.
+- Padrões funcionais e declarativos em React.
+- Sem duplicação de código — funções auxiliares e
+  componentes modulares.
+- Nomes de variáveis descritivos com verbos auxiliares:
+  isLoading, hasError, isGenerating, hasByok.
+- Estrutura de arquivos de componente:
+  componente exportado principal → subcomponentes
+  → helpers → estáticos → tipos.
+
+---
+
+5. CONVENÇÕES DE NOMENCLATURA
+
+- Diretórios: letras minúsculas com hífens
+  (ex: src/features/gerador-conteudo)
+- Named exports para componentes e funções.
+- Interfaces para props e modelos de dados.
+- Sem enums — usar objetos literais ou uniões de strings.
+
+  Exemplos de domínio ContentFlow:
+  type RolePerfil = 'master' | 'admin' | 'colaborador'
+  type RedeSocial = 'instagram' | 'linkedin' | 'tiktok' | 'twitter'
+  type StatusPost = 'rascunho' | 'agendado' | 'publicado' | 'cancelado'
+  type TomDeVoz = 'profissional' | 'descontraido' | 'inspiracional' | 'educativo'
+  type StatusAssinatura = 'trial' | 'active' | 'past_due' | 'canceled'
+
+---
+
+6. TYPESCRIPT
+
+- Todo código em TypeScript — zero JavaScript puro.
+- Interfaces para props e modelos de dados.
+- Componentes funcionais com props tipadas.
+- Proibido uso de any — usar unknown ou tipos explícitos.
+
+---
+
+7. UI E ESTILIZAÇÃO
+
+- Shadcn/UI (baseado em Radix UI) para todos os componentes.
+- Tailwind CSS para layout, espaçamento e utilitários.
+- Ícones exclusivamente via Lucide React.
+- Gráficos via Recharts (Dashboard Master).
+- Mobile-first — responsividade por padrão.
+- Dark mode nativo via variantes dark: do Tailwind.
+- Paleta aplicada via variáveis CSS no globals.css:
+  --background: #08080C
+  --surface: #0F0F14
+  --elevation: #16161D
+  --border: #1E1E28
+  --primary: #7C3AED
+  --success: #10B981
+  --warning: #F59E0B
+  --destructive: #EF4444
+  --foreground: #F4F4F5
+  --muted: #71717A
+
+---
+
+8. PERFORMANCE
+
+- Minimizar useEffect e useState desnecessários.
+- Lazy loading em componentes não críticos.
+- Otimizar imagens: WebP/AVIF, width/height, lazy-load.
+- Queries ao Supabase devem retornar apenas os campos
+  estritamente necessários — sem SELECT *.
+
+---
+
+9. GERENCIAMENTO DE ESTADO
+
+- Estado local via useState/useReducer para a maioria
+  dos casos.
+- Context API para estados globais: autenticação,
+  agência ativa, cliente (workspace) selecionado.
+- Sem bibliotecas de estado complexas a menos que
+  haja necessidade comprovada e explicitamente solicitada.
+
+---
+
+10. LINTING E QUALIDADE
+
+- ESLint + Prettier + TypeScript em modo strict.
+- Validação de todas as entradas com zod:
+  formulários, inputs de API, webhooks do Stripe,
+  payloads de Edge Functions.
+
+---
+
+11. SEGURANÇA
+
+- Variáveis de Ambiente: nunca expor segredos no browser.
+  Chaves privadas apenas em Edge Functions ou build time.
+
+- RLS: sempre ativo em todas as tabelas com agencia_id.
+  Regras validando identidade via auth.uid().
+
+- Auth Guards: validação no servidor (Edge Functions)
+  para toda lógica sensível. Nunca confiar apenas
+  no client-side.
+
+- Edge Functions: validar entradas com zod, segredos
+  em variáveis de ambiente do Supabase — nunca no código.
+
+- BYOK: chave_api_llm criptografada, nunca retornada
+  em queries de frontend.
+
+- Rate Limiting: 100 requests/minuto por agência
+  via Upstash antes do lançamento em produção.
+
+- Gerenciamento de Sessão: verificações de sessão
+  do Supabase Auth em todas as rotas protegidas.
+
+---
+
+12. ACESSIBILIDADE E UX
+
+- Primitivos acessíveis do Radix UI e Shadcn.
+- Atributos aria-*, tratamento de foco e suporte
+  a teclado em todos os componentes interativos.
+- Espaçamento e tipografia consistentes seguindo
+  o sistema de design do ContentFlow.
+
+---
+
+13. EXPERIÊNCIA DO DESENVOLVEDOR
+
+- pnpm dev deve iniciar sem erros de TypeScript ou linter.
+- Servidor de desenvolvimento sempre na porta 3000.
+- Decisões arquiteturais documentadas no README.md
+  ou em docs/.
+- Usar @Context7 e @Supabase MCP para consulta
+  de contexto e documentação.
